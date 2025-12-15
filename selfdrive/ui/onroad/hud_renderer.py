@@ -152,7 +152,8 @@ class HudRenderer(Widget):
       rl.Vector2(x + (set_speed_width - max_text_width) / 2, y + 27),
       FONT_SIZES.max_speed,
       0,
-      max_color,
+      # max_color,
+      rl.Color(0x80, 0x80, 0xFF, 255),
     )
 
     set_speed_text = CRUISE_DISABLED_CHAR if not self.is_cruise_set else str(round(self.set_speed))
@@ -163,7 +164,8 @@ class HudRenderer(Widget):
       rl.Vector2(x + (set_speed_width - speed_text_width) / 2, y + 77),
       FONT_SIZES.set_speed,
       0,
-      set_speed_color,
+      # set_speed_color,
+      rl.Color(0x80, 0x80, 0xFF, 255),
     )
 
   def _draw_current_speed(self, rect: rl.Rectangle) -> None:
