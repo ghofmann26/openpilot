@@ -115,6 +115,8 @@ class CarController(CarControllerBase, MadsCarController, GasInterceptorCarContr
     self.brake = 0.0
     self.last_torque = 0.0
 
+    self.last_lkas_button_frame = self.frame
+
   def update(self, CC, CC_SP, CS, now_nanos):
     MadsCarController.update(self, self.CP, CC, CC_SP)
     actuators = CC.actuators
@@ -249,25 +251,20 @@ class CarController(CarControllerBase, MadsCarController, GasInterceptorCarContr
           if not self.CP_SP.enableGasInterceptor:
             self.gas = pcm_accel / self.params.NIDEC_GAS_MAX
 
-
-
     ############################################################################################################################
-    ############################################################################################################################
-    ############################################################################################################################
-
 
     # Honda: LKAS button can cause delayed immediate disable #36015
     # From: Commit 5d89541,  remove lkas button cap, cleanup.
     # The code below was conditional, only for HONDA_BOSCH_RADARLESS.
     # since I am not radarless, temporarily remove condition for testing.
     if self.CP.carFingerprint in HONDA_BOSCH_RADARLESS:
-      if CS.lkas_ready:
+      if not CS.lkas_ready:
         self.lkas_button_send_remaining = 0
 
       # Start a 5-frame button press to toggle LKAS when it's not in ready state.
       # This activates the LKAS camera to output moving lane lines for the HUD.
       if (CC.enabled and
-          not CS.lkas_ready and
+          CS.lkas_ready and
           self.lkas_button_send_remaining == 0 and
           self.frame >= self.last_lkas_button_frame + 100): # Wait 100 frames for HUD to update
         self.lkas_button_send_remaining = 5
@@ -277,11 +274,7 @@ class CarController(CarControllerBase, MadsCarController, GasInterceptorCarContr
         self.lkas_button_send_remaining -= 1
         can_sends.append(hondacan.spam_buttons_command_lkas(self.packer, self.CAN, 0, CruiseSettings.LKAS, self.CP.carFingerprint))
 
-
     ############################################################################################################################
-    ############################################################################################################################
-    ############################################################################################################################
-
 
     # Intelligent Cruise Button Management
     can_sends.extend(IntelligentCruiseButtonManagementInterface.update(self, CC_SP, self.packer, self.frame,
