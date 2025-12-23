@@ -257,7 +257,7 @@ class CarController(CarControllerBase, MadsCarController, GasInterceptorCarContr
     # From: Commit 5d89541,  remove lkas button cap, cleanup.
     # The code below was conditional, only for HONDA_BOSCH_RADARLESS.
     # since I am not radarless, temporarily remove condition for testing.
-    if self.CP.carFingerprint in HONDA_BOSCH_RADARLESS:
+    if self.CP.carFingerprint in HONDA_BOSCH_RADARLESS or self.CP.carFingerprint in HONDA_BOSCH:
       if not CS.lkas_ready:
         self.lkas_button_send_remaining = 0
 
