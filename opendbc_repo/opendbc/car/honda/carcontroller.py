@@ -10,6 +10,8 @@ from opendbc.car.interfaces import CarControllerBase
 from opendbc.sunnypilot.car.honda.mads import MadsCarController
 from opendbc.sunnypilot.car.honda.gas_interceptor import GasInterceptorCarController
 from opendbc.sunnypilot.car.honda.icbm import IntelligentCruiseButtonManagementInterface
+from openpilot.common.swaglog import cloudlog
+
 
 VisualAlert = structs.CarControl.HUDControl.VisualAlert
 LongCtrlState = structs.CarControl.Actuators.LongControlState
@@ -259,6 +261,7 @@ class CarController(CarControllerBase, MadsCarController, GasInterceptorCarContr
     # The code below was conditional, only for HONDA_BOSCH_RADARLESS.
     # since I am not radarless, temporarily remove condition for testing.
     if self.CP.carFingerprint in HONDA_BOSCH_RADARLESS or self.CP.carFingerprint in HONDA_BOSCH:
+      cloudlog.info(f'CS.lkas_ready = {CS.lkas_ready}, CC.enabled = {CC.enabled}, self.lkas_button_send_remaining = {self.lkas_button_send_remaining}, self.frame = {self.frame}')
       if not CS.lkas_ready:
         self.lkas_button_send_remaining = 0
 
@@ -273,6 +276,7 @@ class CarController(CarControllerBase, MadsCarController, GasInterceptorCarContr
       if self.lkas_button_send_remaining > 0:
         self.last_lkas_button_frame = self.frame
         self.lkas_button_send_remaining -= 1
+        cloudlog.info(f'CALLING spam_buttons_command_lkas - self.lkas_button_send_remaining = {self.lkas_button_send_remaining}, self.last_lkas_button_frame = {self.last_lkas_button_frame}')
         can_sends.append(hondacan.spam_buttons_command_lkas(self.packer, self.CAN, 0, CruiseSettings.LKAS, self.CP.carFingerprint))
 
     ############################################################################################################################
