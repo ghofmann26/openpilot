@@ -116,6 +116,7 @@ class CarController(CarControllerBase, MadsCarController, GasInterceptorCarContr
     self.last_torque = 0.0
 
     self.last_lkas_button_frame = self.frame
+    self.lkas_button_send_remaining = 0
 
   def update(self, CC, CC_SP, CS, now_nanos):
     MadsCarController.update(self, self.CP, CC, CC_SP)
