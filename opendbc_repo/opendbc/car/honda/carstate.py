@@ -52,6 +52,7 @@ class CarState(CarStateBase, CarStateExt):
     # However, on cars without a digital speedometer this is not always present (HRV, FIT, CRV 2016, ILX and RDX)
     self.dash_speed_seen = False
 
+    # Honda: LKAS button can cause delayed immediate disable #36015
     self.lkas_ready = False
 
   def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP]:

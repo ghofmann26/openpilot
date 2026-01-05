@@ -117,8 +117,16 @@ class CarController(CarControllerBase, MadsCarController, GasInterceptorCarContr
     self.brake = 0.0
     self.last_torque = 0.0
 
+    # Honda: LKAS button can cause delayed immediate disable #36015
     self.last_lkas_button_frame = self.frame
     self.lkas_button_send_remaining = 0
+
+    # TEST CASE - cycle LKAS button every 3 seconds    Honda: LKAS button can cause delayed immediate disable #36015
+    self.testing = True
+    self.cycleFrameCount = 300  # 3 seconds worth of frames (100 frames/second)
+    self.currentCycleFrame = 0
+    self.lkasCycleState = 1     # first, turn it on, then off, repeat.
+    self.lkasCycleSendRemaining = 0     # must send it 5 cycles in a row. 50ms press.
 
   def update(self, CC, CC_SP, CS, now_nanos):
     MadsCarController.update(self, self.CP, CC, CC_SP)
@@ -256,28 +264,44 @@ class CarController(CarControllerBase, MadsCarController, GasInterceptorCarContr
 
     ############################################################################################################################
 
-    # Honda: LKAS button can cause delayed immediate disable #36015
-    # From: Commit 5d89541,  remove lkas button cap, cleanup.
-    # The code below was conditional, only for HONDA_BOSCH_RADARLESS.
-    # since I am not radarless, temporarily remove condition for testing.
-    if self.CP.carFingerprint in HONDA_BOSCH_RADARLESS or self.CP.carFingerprint in HONDA_BOSCH:
-      cloudlog.info(f'CS.lkas_ready = {CS.lkas_ready}, CC.enabled = {CC.enabled}, self.lkas_button_send_remaining = {self.lkas_button_send_remaining}, self.frame = {self.frame}')
-      if not CS.lkas_ready:
-        self.lkas_button_send_remaining = 0
+    if self.testing:
+      # TEST CASE - cycle LKAS button every 3 seconds    Honda: LKAS button can cause delayed immediate disable #36015
+      cloudlog.info(f'CS.lkas_ready = {CS.lkas_ready}, CC.enabled = {CC.enabled}, self.currentCycleFrame = {self.currentCycleFrame}, self.lkasCycleSendRemaining = {self.lkasCycleSendRemaining}, self.frame = {self.frame}')
+      if self.currentCycleFrame == self.cycleFrameCount:
+        self.currentCycleFrame = 0
+        self.lkasCycleSendRemaining = 5
+      else:
+        self.currentCycleFrame +=1
 
-      # Start a 5-frame button press to toggle LKAS when it's not in ready state.
-      # This activates the LKAS camera to output moving lane lines for the HUD.
-      if (CC.enabled and
-          CS.lkas_ready and
-          self.lkas_button_send_remaining == 0 and
-          self.frame >= self.last_lkas_button_frame + 100): # Wait 100 frames for HUD to update
-        self.lkas_button_send_remaining = 5
-
-      if self.lkas_button_send_remaining > 0:
-        self.last_lkas_button_frame = self.frame
-        self.lkas_button_send_remaining -= 1
-        cloudlog.info(f'CALLING spam_buttons_command_lkas - self.lkas_button_send_remaining = {self.lkas_button_send_remaining}, self.last_lkas_button_frame = {self.last_lkas_button_frame}')
+      if self.lkasCycleSendRemaining > 0:
+        cloudlog.info(f'Cycling the LKAS button.  self.lkasCycleSendRemaining = {self.lkasCycleSendRemaining}, self.currentCycleFrame = {self.currentCycleFrame}')
         can_sends.append(hondacan.spam_buttons_command_lkas(self.packer, self.CAN, 0, CruiseSettings.LKAS, self.CP.carFingerprint))
+        self.lkasCycleSendRemaining -=1
+
+    else:
+
+      # Honda: LKAS button can cause delayed immediate disable #36015
+      # From: Commit 5d89541,  remove lkas button cap, cleanup.
+      # The code below was conditional, only for HONDA_BOSCH_RADARLESS.
+      # since I am not radarless, temporarily remove condition for testing.
+      if self.CP.carFingerprint in HONDA_BOSCH_RADARLESS or self.CP.carFingerprint in HONDA_BOSCH:
+        cloudlog.info(f'CS.lkas_ready = {CS.lkas_ready}, CC.enabled = {CC.enabled}, self.lkas_button_send_remaining = {self.lkas_button_send_remaining}, self.frame = {self.frame}')
+        if not CS.lkas_ready:
+          self.lkas_button_send_remaining = 0
+
+        # Start a 5-frame button press to toggle LKAS when it's not in ready state.
+        # This activates the LKAS camera to output moving lane lines for the HUD.
+        if (CC.enabled and
+            CS.lkas_ready and
+            self.lkas_button_send_remaining == 0 and
+            self.frame >= self.last_lkas_button_frame + 100): # Wait 100 frames for HUD to update
+          self.lkas_button_send_remaining = 5
+
+        if self.lkas_button_send_remaining > 0:
+          self.last_lkas_button_frame = self.frame
+          self.lkas_button_send_remaining -= 1
+          cloudlog.info(f'CALLING spam_buttons_command_lkas - self.lkas_button_send_remaining = {self.lkas_button_send_remaining}, self.last_lkas_button_frame = {self.last_lkas_button_frame}')
+          can_sends.append(hondacan.spam_buttons_command_lkas(self.packer, self.CAN, 0, CruiseSettings.LKAS, self.CP.carFingerprint))
 
     ############################################################################################################################
 
