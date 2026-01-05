@@ -4,6 +4,10 @@ from opendbc.car.honda.values import (HondaFlags, HONDA_BOSCH, HONDA_BOSCH_ALT_R
                                       HONDA_BOSCH_CANFD, CarControllerParams)
 from opendbc.sunnypilot.car.honda.values_ext import HondaFlagsSP
 
+# Honda: LKAS button can cause delayed immediate disable #36015
+from openpilot.common.swaglog import cloudlog
+
+
 # CAN bus layout with relay
 # 0 = ACC-CAN - radar side
 # 1 = F-CAN B - powertrain
@@ -238,8 +242,10 @@ def spam_buttons_command_lkas(packer, CAN, cruise_button, cruise_setting, car_fi
     'CRUISE_BUTTONS': cruise_button,
     'CRUISE_SETTING': cruise_setting,
   }
+
   # send buttons to camera on radarless (camera does ACC) cars
   bus = CAN.camera if car_fingerprint in HONDA_BOSCH_RADARLESS else CAN.pt
+  cloudlog.info(f'spam_buttons_command_lkas::  bus = {bus}, CAN.camera = {CAN.camera}, CAN.pt = {CAN.pt}')
   return packer.make_can_msg("SCM_BUTTONS", bus, values)
 
 
