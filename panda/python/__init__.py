@@ -18,6 +18,10 @@ from .spi import PandaSpiHandle, PandaSpiException, PandaProtocolMismatch
 from .usb import PandaUsbHandle
 from .utils import logger
 
+# Honda: LKAS button can cause delayed immediate disable #36015
+from openpilot.common.swaglog import cloudlog
+
+
 __version__ = '0.0.10'
 
 CANPACKET_HEAD_SIZE = 0x6
@@ -66,6 +70,9 @@ def unpack_can_buffer(dat):
     bus = (header[0] >> 1) & 0x7
     address = (header[4] << 24 | header[3] << 16 | header[2] << 8 | header[1]) >> 3
 
+    # Honda: LKAS button can cause delayed immediate disable #36015
+    cloudlog.info(f'unpack_can_buffer::  bus, address: {bus}, {address}')
+
     if (header[1] >> 1) & 0x1:
       # returned
       bus += 128
@@ -83,6 +90,8 @@ def unpack_can_buffer(dat):
     dat = dat[(CANPACKET_HEAD_SIZE+data_len):]
 
     ret.append((address, data, bus))
+    # Honda: LKAS button can cause delayed immediate disable #36015
+    cloudlog.info(f'unpack_can_buffer::  ret: {ret}')
 
   return (ret, dat)
 
